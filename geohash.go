@@ -14,21 +14,17 @@ type BoundingBox struct {
 	MaxLongitude float64
 }
 
-func (bbox *BoundingBox) calcBboxRange(cd int, mask int, isLon bool) {
-	if isLon {
-		lon := (bbox.MinLongitude + bbox.MaxLongitude) / 2
-		if cd&mask > 0 {
-			bbox.MinLongitude = lon
-		} else {
-			bbox.MaxLongitude = lon
-		}
-	} else {
-		lat := (bbox.MinLatitude + bbox.MaxLatitude) / 2
-		if cd&mask > 0 {
-			bbox.MinLatitude = lat
-		} else {
-			bbox.MaxLatitude = lat
-		}
+type Coords struct {
+	Latitude  float64
+	Longitude float64
+}
+
+func Decode(geohash string) *Coords {
+	bbox := DecodeBoundingBox(geohash)
+
+	return &Coords{
+		Latitude:  (bbox.MinLatitude + bbox.MaxLatitude) / 2,
+		Longitude: (bbox.MinLongitude + bbox.MaxLongitude) / 2,
 	}
 }
 
@@ -110,4 +106,22 @@ func PrecisionEncode(latitude float64, longitude float64, precision int) string 
 		}
 	}
 	return geohash.String()
+}
+
+func (bbox *BoundingBox) calcBboxRange(cd int, mask int, isLon bool) {
+	if isLon {
+		lon := (bbox.MinLongitude + bbox.MaxLongitude) / 2
+		if cd&mask > 0 {
+			bbox.MinLongitude = lon
+		} else {
+			bbox.MaxLongitude = lon
+		}
+	} else {
+		lat := (bbox.MinLatitude + bbox.MaxLatitude) / 2
+		if cd&mask > 0 {
+			bbox.MinLatitude = lat
+		} else {
+			bbox.MaxLatitude = lat
+		}
+	}
 }

@@ -1,8 +1,8 @@
-# Geohash library for Go
+# Geohash for Go
 
-# Usage:
+# Usage
 
-geohash.Encode(37.941882, 23.653022)
-geohash.DecodeBoundingBox("sw8zf5pe7r7w")
+- geohash.Encode(37.941882, 23.653022)
+- geohash.DecodeBoundingBox("sw8zf5pe7r7w")
 
 http://en.wikipedia.org/wiki/Geohash

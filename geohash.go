@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var BASE32 = []byte("0123456789bcdefghjkmnpqrstuvwxyz")
+var Base32Map = []byte("0123456789bcdefghjkmnpqrstuvwxyz")
 
 type BoundingBox struct {
 	MinLatitude  float64
@@ -29,30 +29,20 @@ func Decode(geohash string) *Coords {
 }
 
 func DecodeBoundingBox(geohash string) *BoundingBox {
-	var (
-		code string
-		cd   int
-		mask int
-	)
-	hashLen := len(geohash)
-	isEven := true
-	latErr := 90.0
-	lonErr := 180.0
-	bits := []int{16, 8, 4, 2, 1}
-	bbox := &BoundingBox{MinLatitude: -90.0, MaxLatitude: 90.0, MinLongitude: -180.0, MaxLongitude: 180.0}
+	var cd int
 	geohash = strings.ToLower(geohash)
 
-	for i := 0; i < hashLen; i++ {
-		code = geohash[i : i+1]
-		cd = bytes.Index(BASE32, []byte(code))
+	isEven := true
+	bits := []int{16, 8, 4, 2, 1}
+	bbox := &BoundingBox{MinLatitude: -90.0, MaxLatitude: 90.0, MinLongitude: -180.0, MaxLongitude: 180.0}
 
-		for j := 0; j < 5; j++ {
-			mask = bits[j]
+	for _, code := range geohash {
+		cd = bytes.Index(Base32Map, []byte(string(code)))
+
+		for _, mask := range bits {
 			if isEven {
-				lonErr /= 2
 				bbox.calcBboxRange(cd, mask, true)
 			} else {
-				latErr /= 2
 				bbox.calcBboxRange(cd, mask, false)
 			}
 			isEven = !isEven
@@ -100,12 +90,95 @@ func PrecisionEncode(latitude float64, longitude float64, precision int) string 
 		if bit < 4 {
 			bit++
 		} else {
-			geohash.WriteByte(BASE32[hashValue])
+			geohash.WriteByte(Base32Map[hashValue])
 			bit = 0
 			hashValue = 0
 		}
 	}
 	return geohash.String()
+}
+
+func Neighbors(geohash string) []string {
+	v := []string{}
+	directions := []string{"top", "right", "bottom", "left"}
+
+	for _, direction := range directions {
+		neighbor := Neighbor(geohash, direction)
+		v = append(v, neighbor)
+
+		if direction == "top" || direction == "bottom" {
+			v = append(v, Neighbor(neighbor, "right"))
+			v = append(v, Neighbor(neighbor, "left"))
+		}
+	}
+	return v
+}
+
+func Neighbor(geohash string, dir string) string {
+	neighbors := [][]string{
+		[]string{
+			"p0r21436x8zb9dcf5h7kjnmqesgutwvy",
+			"bc01fg45238967deuvhjyznpkmstqrwx",
+		},
+		[]string{
+			"bc01fg45238967deuvhjyznpkmstqrwx",
+			"p0r21436x8zb9dcf5h7kjnmqesgutwvy",
+		},
+		[]string{
+			"14365h7k9dcfesgujnmqp0r2twvyx8zb",
+			"238967debc01fg45kmstqrwxuvhjyznp",
+		},
+		[]string{
+			"238967debc01fg45kmstqrwxuvhjyznp",
+			"14365h7k9dcfesgujnmqp0r2twvyx8zb",
+		},
+	}
+	borders := [][]string{
+		[]string{
+			"prxz",
+			"bcfguvyz",
+		},
+		[]string{
+			"bcfguvyz",
+			"prxz",
+		},
+		[]string{
+			"028b",
+			"0145hjnp",
+		},
+		[]string{
+			"0145hjnp",
+			"028b",
+		},
+	}
+
+	var intDir int
+
+	switch strings.ToLower(dir) {
+	case "top":
+	default:
+		intDir = 0
+	case "right":
+		intDir = 1
+	case "bottom":
+		intDir = 2
+	case "left":
+		intDir = 3
+	}
+
+	hashLen := len(geohash)
+	lastChar := geohash[hashLen-1:]
+	isEven := hashLen % 2
+	base := geohash[:hashLen-1]
+
+	border := borders[intDir][isEven]
+	neighbor := neighbors[intDir][isEven]
+
+	if strings.Index(border, lastChar) != -1 {
+		base = Neighbor(base, dir)
+	}
+
+	return base + string(Base32Map[strings.Index(neighbor, lastChar)])
 }
 
 func (bbox *BoundingBox) calcBboxRange(cd int, mask int, isLon bool) {

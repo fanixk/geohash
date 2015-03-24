@@ -1,8 +1,8 @@
 [![Build Status](https://travis-ci.org/fanixk/geohash.svg?branch=travis)](https://travis-ci.org/fanixk/geohash)
 
-# Geohash for Go
+## Geohash for Go
 
-# Usage
+#### Usage
 
 geohash := geohash.Encode(37.941882, 23.653022)
 
